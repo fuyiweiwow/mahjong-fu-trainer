@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>hand-drill</title>
+<style>
+:root{
+  --red:#d0453c;--blue:#2e6fd4;--green:#3d9e52;--dark:#3a4353;
+  --gold:#d8a018;--ink:#2b2f36;--muted:#8a8f98;--card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#f5f4f0;color:var(--ink);display:flex;justify-content:center;padding:22px 12px 80px}
+.wrap{width:100%;max-width:740px}
+header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+h1{font-size:20px;font-weight:700}
+h1 small{font-weight:400;color:var(--muted);font-size:13px;margin-left:8px}
+#stats{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);padding:18px;margin-bottom:14px}
+
+/* ---- 牌（正常模式） ---- */
+.tile{width:40px;height:54px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:22px;box-shadow:0 1px 2px rgba(0,0,0,.28);user-select:none;flex:none}
+.tile.m{background:var(--red)}
+.tile.p{background:var(--blue)}
+.tile.s{background:var(--green)}
+.tile.h{background:var(--dark);font-size:19px}
+.tile.zhong{background:var(--red)}
+.tile.fa{background:var(--green)}
+.tile.bai{background:#fff;border:2px solid #c9c9c9;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.tile.sm{width:22px;height:30px;font-size:13px;border-radius:3px;box-shadow:none}
+.tile.click{cursor:pointer;transition:transform .08s}
+.tile.click:hover{transform:translateY(-3px)}
+.tile.picked{outline:3px dashed #d0453c;outline-offset:1px}
+.tile.best{outline:3px solid var(--gold);outline-offset:1px}
+
+/* ---- 令牌（摸鱼模式） ---- */
+.tok{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:27px;padding:0 5px;
+  border:1px solid #3d4145;border-radius:3px;background:#25282b;color:#c5c8c6;
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;font-size:14px;font-weight:600;
+  user-select:none;flex:none}
+.tok.sm{min-width:20px;height:19px;font-size:11px;padding:0 3px}
+.tok.click{cursor:pointer;transition:transform .08s}
+.tok.click:hover{transform:translateY(-2px);border-color:#7f8489}
+.tok.picked{outline:2px dashed #d07f76;outline-offset:1px}
+.tok.best{outline:2px solid #9aa0a6;outline-offset:1px}
+
+.meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.badge{display:inline-flex;align-items:center;gap:5px;background:#f0efe9;border-radius:6px;padding:4px 8px;font-size:13px}
+.badge.accent{background:#efe7d2;font-weight:600}
+.hand{display:flex;flex-wrap:wrap;align-items:flex-end;gap:5px;row-gap:12px;min-height:58px}
+.hand .label{font-size:12px;color:var(--muted);margin-top:4px}
+.ghost{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;
+  text-decoration:underline dotted;padding:4px 2px;margin-top:12px}
+.ghost:hover{color:var(--ink)}
+#hint-text{margin-top:8px;font-size:14px;font-weight:600;color:#6b5a1e;display:none}
+
+.ask{font-size:15px;font-weight:700}
+.ask small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+#verdict{margin-top:14px;font-size:16px;font-weight:800;min-height:22px}
+#verdict.ok{color:#256b39}
+#verdict.bad{color:#a3271f}
+.exp-row{margin-top:12px;font-size:14px;line-height:1.7}
+.exp-row .lead{font-weight:700}
+.acc{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
+.acc .n{font-size:12px;color:var(--muted)}
+.note2{margin-top:12px;font-size:12.5px;color:var(--muted)}
+#btn-next{margin-top:14px;width:100%;padding:12px;border:none;border-radius:10px;background:var(--dark);
+  color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+#btn-next:hover{background:#2b3242}
+
+details.card summary{cursor:pointer;font-weight:700;font-size:14px}
+details.card[open] summary{margin-bottom:10px}
+.rules-ul{margin:8px 0 0 18px;font-size:13.5px;line-height:1.9}
+.legend{margin-top:10px;font-size:12.5px;color:var(--muted)}
+footer{font-size:12px;color:var(--muted);line-height:1.8;text-align:center}
+footer a{color:#6b7280}
+#btn-mode{background:none;border:1px solid #ddd9cf;border-radius:6px;color:var(--muted);
+  font-size:12px;padding:3px 10px;cursor:pointer;font-family:inherit}
+#btn-mode:hover{color:var(--ink);border-color:var(--muted)}
+
+/* ---- 摸鱼模式：深色终端风 ---- */
+body.fishy{background:#1d1f21;color:#c5c8c6;
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace}
+body.fishy .card{background:#25282b;box-shadow:none;border:1px solid #34383c}
+body.fishy h1{color:#e6e6e6;font-size:16px}
+body.fishy h1 small{color:#7f8489}
+body.fishy #stats{color:#7f8489;font-size:12px}
+body.fishy .badge{background:#2c3034;color:#9aa0a6;border-radius:3px;font-size:12px}
+body.fishy .badge.accent{background:#363b41;color:#c5c8c6}
+body.fishy .hand{min-height:31px}
+body.fishy .ghost{color:#7f8489}
+body.fishy .ghost:hover{color:#c5c8c6}
+body.fishy #hint-text{color:#a8a06a}
+body.fishy .ask{font-size:14px}
+body.fishy .ask small{color:#7f8489}
+body.fishy #verdict.ok{color:#8fd18f}
+body.fishy #verdict.bad{color:#e08d85}
+body.fishy .exp-row{font-size:13px}
+body.fishy .acc .n{color:#7f8489}
+body.fishy .note2{color:#7f8489}
+body.fishy #btn-next{background:#2c3034;color:#c5c8c6}
+body.fishy #btn-next:hover{background:#363b41}
+body.fishy #btn-mode{background:none;border-color:#3d4145;color:#7f8489}
+body.fishy #rules,body.fishy footer{display:none}
+
+@media (max-width:480px){
+  .tile{width:33px;height:45px;font-size:18px}
+  .tile.h{font-size:16px}
+  .tile.sm{width:20px;height:27px;font-size:12px}
+  .tok{min-width:28px;height:24px;font-size:13px}
+  .card{padding:14px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">hand-drill<small id="title-sub"></small></h1>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="stats"></div>
+      <button id="btn-mode" title="H">view</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="meta" id="meta"></div>
+    <div class="hand" id="hand"></div>
+    <button class="ghost" id="btn-hint">hint</button>
+    <div id="hint-text"></div>
+  </section>
+
+  <section class="card">
+    <p class="ask" id="ask"></p>
+    <div id="verdict"></div>
+    <div id="breakdown"></div>
+    <button id="btn-next" hidden>next</button>
+  </section>
+
+  <details class="card" id="rules">
+    <summary>牌效基础 &amp; 术语说明</summary>
+    <ul class="rules-ul">
+      <li><b>向听数</b>：距离听牌还差的有效进牌张数。0 = 听牌（一向听 = 再进 1 张有效牌即听牌）</li>
+      <li><b>进张（牌）</b>：能让向听数减 1 的牌。进张<b>种数</b>越多越灵活，<b>枚数</b>（含手内占用后剩余张数）越多越快</li>
+      <li><b>判定口径（基础）</b>：先比向听数（少者优），再比进张枚数（多者优）。不考虑打点/役种/防守/宝牌</li>
+      <li>注：进张枚数按「4 张减去手内可见张数」计算</li>
+    </ul>
+    <p class="legend">配色：红=万，蓝=饼，绿=条，深灰 E/S/W/N=风牌，纯红=中，纯绿=发，白=白。<br>
+    低调模式令牌对照：数字+花色缩写 m/p/s；风牌 E/S/W/N；字牌 B=白、F=发、C=中。缩写：sh=向听数（tenpai=听牌）、acc=进张（k=种数）、best=最佳切牌。</p>
+  </details>
+
+  <footer id="foot">
+    资料：<a href="https://riichi.wiki" target="_blank" rel="noopener">riichi.wiki</a> ·
+    <a href="https://en.wikipedia.org/wiki/Japanese_mahjong" target="_blank" rel="noopener">Wikipedia · Japanese mahjong</a>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+ * 配置占位符（由 extension.js 注入；独立打开时取右侧默认值）
+ * ============================================================ */
+const START_DISGUISED='__START_DISGUISED__'==='true';
+const AUTO_BLUR='__AUTO_BLUR__'==='true';
+
+/* 显示模式：'zh' 正常 / 'fishy' 低调 */
+let MODE=START_DISGUISED?'fishy':'zh';
+
+/* ============================================================
+ * 牌定义：0-8 万1-9 | 9-17 饼1-9 | 18-26 条1-9
+ *         27东 28南 29西 30北 | 31白 32发 33中
+ * ============================================================ */
+const CN_NUM='一二三四五六七八九';
+const HONOR_RENDER={27:['h','E'],28:['h','S'],29:['h','W'],30:['h','N'],31:['bai',''],32:['fa',''],33:['zhong','']};
+const HONOR_NAME=['东','南','西','北','白','发','中'];
+const TOK_HONOR=['E','S','W','N','B','F','C'];
+
+function tileName(t){
+  if(t>=27)return HONOR_NAME[t-27];
+  return CN_NUM[t%9]+'万饼条'[t/9|0];
+}
+function tokStr(t){
+  if(t>=27)return TOK_HONOR[t-27];
+  return (t%9+1)+'mps'[t/9|0];
+}
+function tileHTML(t,extra){
+  extra=extra||'';
+  if(MODE==='fishy'){
+    return '<span class="tok'+(extra?' '+extra:'')+'">'+tokStr(t)+'</span>';
+  }
+  if(t>=27){
+    const r=HONOR_RENDER[t];
+    return '<span class="tile '+r[0]+(extra?' '+extra:'')+'">'+r[1]+'</span>';
+  }
+  return '<span class="tile '+'mps'[t/9|0]+(extra?' '+extra:'')+'">'+(t%9+1)+'</span>';
+}
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;const t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+
+/* 双语文案 */
+const TXT={
+  zh:{
+    title:'基础何切练习',titleSub:'牌效训练',
+    ask:'切哪一张？',askSub:'基础牌效：最少向听 → 最大进张（不考虑打点/防守）',
+    hintBtn:'看不懂？显示目标向听数',hint:(sh)=>'最佳切完后是「'+SH_ZH[sh]+'」',
+    ok:(t)=>'✓ 切对了！最佳就是 '+tileName(t),bad:(t)=>'✕ 最佳是 '+tileName(t),
+    bestRow:(t,sh,uk)=>'最佳切牌 '+tileName(t)+' → '+SH_ZH[sh]+'，进张 '+uk.kinds+' 种 '+uk.count+' 枚',
+    yourRow:(t,sh,uk)=>'你的切牌 '+tileName(t)+' → '+SH_ZH[sh]+'，进张 '+uk.kinds+' 种 '+uk.count+' 枚',
+    yourLabel:'你的切牌：',bestLabel:'最佳切牌：',accLabel:'进张：',
+    note:'判定口径：先比向听数（少者优），再比进张枚数（多者优）；进张=4张-手内可见张数。基础练习不考虑打点/役种/防守/宝牌。',
+    next:'下一题（Enter）',
+    badge1:'门清',badge2:'基础',
+    stats:(s)=>'连对 ×'+s.streak+'｜最佳 ×'+s.best+'｜累计 '+s.c+'/'+s.a,
+    modeBtn:'摸鱼模式 (H)'
+  },
+  fishy:{
+    title:'hand-drill',titleSub:'v0.1',
+    ask:'drop one',askSub:'basic efficiency: min-sh -> max-acc',
+    hintBtn:'hint',hint:(sh)=>'tgt: '+SH_FISHY[sh],
+    ok:(t)=>'OK · best '+tokStr(t),bad:(t)=>'NG · best '+tokStr(t),
+    bestRow:(t,sh,uk)=>'best '+tokStr(t)+' -> '+SH_FISHY[sh]+' · acc '+uk.kinds+'k/'+uk.count,
+    yourRow:(t,sh,uk)=>'yours '+tokStr(t)+' -> '+SH_FISHY[sh]+' · acc '+uk.kinds+'k/'+uk.count,
+    yourLabel:'yours:',bestLabel:'best:',accLabel:'acc:',
+    note:'rule: min shanten, then max acceptance count. basic mode only.',
+    next:'next ↵',
+    badge1:'closed',badge2:'basic',
+    stats:(s)=>'run ×'+s.streak+' · max ×'+s.best+' · '+s.c+'/'+s.a,
+    modeBtn:'view'
+  }
+};
+const SH_ZH={0:'听牌',1:'一向听',2:'二向听'};
+const SH_FISHY={0:'tenpai',1:'1-sh',2:'2-sh'};
+function T(){return TXT[MODE];}
+
+/* ============================================================
+ * 向听数（标准型）：8 - 2*面子 - 搭子数，五搭子无雀头 +1
+ * ============================================================ */
+function shantenStd(c){
+  const cnt=c.slice();
+  let best=8;
+  const score=(m,t,p)=>{const s=8-2*m-t+((m+t===5&&!p)?1:0);if(s<best)best=s;};
+  function partials(i,m,t,p){
+    if(m+t>=5){score(m,t,p);return;}
+    while(i<34&&cnt[i]===0)i++;
+    if(i>=34){score(m,t,p);return;}
+    if(cnt[i]>=2){cnt[i]-=2;partials(i,m,t+1,true);cnt[i]+=2;}
+    if(i<27&&i%9<=7&&cnt[i+1]>0){cnt[i]--;cnt[i+1]--;partials(i,m,t+1,p);cnt[i]++;cnt[i+1]++;}
+    if(i<27&&i%9<=6&&cnt[i+2]>0){cnt[i]--;cnt[i+2]--;partials(i,m,t+1,p);cnt[i]++;cnt[i+2]++;}
+    partials(i+1,m,t,p);
+  }
+  function sets(i,m){
+    while(i<34&&cnt[i]===0)i++;
+    if(i>=34){partials(0,m,0,false);return;}
+    if(cnt[i]>=3){cnt[i]-=3;sets(i,m+1);cnt[i]+=3;}
+    if(i<27&&i%9<=6&&cnt[i+1]>0&&cnt[i+2]>0){
+      cnt[i]--;cnt[i+1]--;cnt[i+2]--;sets(i,m+1);cnt[i]++;cnt[i+1]++;cnt[i+2]++;
+    }
+    sets(i+1,m);
+  }
+  sets(0,0);
+  return best;
+}
+/* 七对向听：6 - 对子数 + max(0, 7 - 种类数) */
+function shantenChiitoi(c){
+  let pairs=0,kinds=0;
+  for(let i=0;i<34;i++){if(c[i]>0){kinds++;if(c[i]>=2)pairs++;}}
+  return 6-pairs+Math.max(0,7-kinds);
+}
+
+/* 进张：所有能让向听数减 1 的牌种与枚数（4 - 手内张数） */
+function ukeireStd(c13,sh){
+  const list=[];let count=0;
+  for(let x=0;x<34;x++){
+    const n=4-c13[x];
+    if(n<=0)continue;
+    c13[x]++;
+    if(shantenStd(c13)<sh){list.push({t:x,n:n});count+=n;}
+    c13[x]--;
+  }
+  return {list:list,kinds:list.length,count:count};
+}
+
+/* 分析 14 张手牌：所有切牌选项 → 唯一最佳（先向听后进张） */
+function analyzeDiscards(counts){
+  const distinct=[];
+  for(let t=0;t<34;t++)if(counts[t]>0)distinct.push(t);
+  let minSh=8;
+  const shOf={};
+  distinct.forEach(t=>{
+    counts[t]--;
+    const sh=shantenStd(counts);
+    counts[t]++;
+    shOf[t]=sh;
+    if(sh<minSh)minSh=sh;
+  });
+  const cands=distinct.filter(t=>shOf[t]===minSh);
+  const scored=cands.map(t=>{
+    counts[t]--;
+    const uk=ukeireStd(counts,minSh);
+    counts[t]++;
+    return {t:t,sh:minSh,uk:uk};
+  });
+  scored.sort((a,b)=>b.uk.count-a.uk.count);
+  const best=scored[0];
+  const unique=!(scored.length>1&&scored[1].uk.count===best.uk.count);
+  return {best:best,unique:unique,minSh:minSh,scored:scored};
+}
+function analyzeOne(counts,t){
+  counts[t]--;
+  const sh=shantenStd(counts);
+  const uk=ukeireStd(counts,sh);
+  counts[t]++;
+  return {t:t,sh:sh,uk:uk};
+}
+
+/* ============================================================
+ * 出题：模板 4面子+雀头 → 随机破坏 1~3 张 → 验证唯一最佳
+ * ============================================================ */
+function genQuestion(){
+  for(let attempt=0;attempt<400;attempt++){
+    let q=null;
+    try{q=tryGen();}catch(e){q=null;}
+    if(q)return q;
+  }
+  // 兜底：极简模板（理论可达，几乎不会触发）
+  const counts=new Array(34).fill(0);
+  [0,1,2,3,4,5,6].forEach(t=>counts[t]++);
+  counts[13]+=7;
+  return tryFix(counts);
+}
+function tryGen(){
+  const counts=new Array(34).fill(0);
+  // 4 面子
+  for(let si=0;si<4;si++){
+    let ok=false;
+    for(let tr=0;tr<30&&!ok;tr++){
+      let tiles;
+      if(Math.random()<0.72){
+        const base=(Math.random()*3|0)*9+(Math.random()*7|0);
+        tiles=[base,base+1,base+2];
+      }else{
+        const t=Math.random()<0.35?27+(Math.random()*7|0):Math.random()*27|0;
+        tiles=[t,t,t];
+      }
+      if(tiles.every(x=>counts[x]<4)){tiles.forEach(x=>counts[x]++);ok=true;}
+    }
+    if(!ok)return null;
+  }
+  // 雀头
+  let pairOk=false;
+  for(let tr=0;tr<30;tr++){
+    const t=Math.random()<0.25?27+(Math.random()*7|0):Math.random()*27|0;
+    if(counts[t]<=2){counts[t]+=2;pairOk=true;break;}
+  }
+  if(!pairOk)return null;
+  // 破坏：随机替换 1~3 张（同花色邻近优先）
+  const mut=(Math.random()<0.3)?1:(Math.random()<0.8?2:3);
+  for(let k=0;k<mut;k++){
+    const occupied=[];
+    for(let t=0;t<34;t++)for(let j=0;j<counts[t];j++)occupied.push(t);
+    const from=occupied[Math.random()*occupied.length|0];
+    let to=-1;
+    for(let tr=0;tr<20;tr++){
+      let cand;
+      if(Math.random()<0.55&&from<27){
+        const suit=from/9|0,n=from%9;
+        const d=[-2,-1,1,2][Math.random()*4|0];
+        const nn=n+d;
+        if(nn>=0&&nn<=8)cand=suit*9+nn;else continue;
+      }else{
+        cand=Math.random()*34|0;
+      }
+      if(counts[cand]<4&&cand!==from){to=cand;break;}
+    }
+    if(to<0)continue;
+    counts[from]--;counts[to]++;
+  }
+  return tryFix(counts);
+}
+function tryFix(counts){
+  // 总张数必须 14（模板恒为 14；破坏是等量替换）
+  let total=0;for(let i=0;i<34;i++){if(counts[i]>4)return null;total+=counts[i];}
+  if(total!==14)return null;
+  const r=analyzeDiscards(counts);
+  if(!r.unique)return null;                      // 最佳不唯一 → 重生成
+  if(r.minSh<0||r.minSh>2)return null;           // 只出 听牌/一向/二向
+  // 基础口径：排除七对型局面（标准型须严格更优）
+  counts[r.best.t]--;
+  const chii=shantenChiitoi(counts);
+  counts[r.best.t]++;
+  if(chii<=r.minSh)return null;
+  let pairs=0;for(let i=0;i<34;i++)if(counts[i]>=2)pairs++;
+  if(pairs>3)return null;
+  const tiles=[];
+  counts.forEach((c,t)=>{for(let k=0;k<c;k++)tiles.push(t);});
+  tiles.sort((a,b)=>a-b);
+  return {tiles:counts.slice(),tilesSorted:tiles,answer:r.best.t,
+    answerSh:r.minSh,answerUk:r.best.uk};
+}
+
+/* 自测钩子 */
+globalThis.__setMode=function(m){MODE=m;};
+globalThis.__selftest=function(n){
+  n=n||300;
+  const dist={shanten:{},time:0};let bad=0;
+  const t0=Date.now();
+  for(let i=0;i<n;i++){
+    const q=genQuestion();
+    dist.shanten[q.answerSh]=(dist.shanten[q.answerSh]||0)+1;
+    // 校验：重算一致 + 唯一性 + 范围
+    const counts=q.tiles.slice();
+    const r=analyzeDiscards(counts);
+    if(!r.unique||r.best.t!==q.answer||r.best.uk.count!==q.answerUk.count)bad++;
+    if(q.answerSh<0||q.answerSh>2)bad++;
+  }
+  dist.time=Date.now()-t0;
+  dist.bad=bad;
+  return dist;
+};
+
+/* ============================================================
+ * UI（非浏览器环境下跳过）
+ * ============================================================ */
+if(typeof document!=='undefined')(function(){
+  const $=id=>document.getElementById(id);
+  const KEY='kiri-drill-stats-v1';
+  let stats;
+  try{stats=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){stats={};}
+  stats.a=stats.a||0;stats.c=stats.c||0;stats.streak=stats.streak||0;stats.best=stats.best||0;
+  const saveStats=()=>{try{localStorage.setItem(KEY,JSON.stringify(stats));}catch(e){}};
+
+  let q=null,answered=false,lastChosen=null;
+
+  function renderStats(){$('stats').textContent=T().stats(stats);}
+  function renderMeta(){
+    $('meta').innerHTML=
+      '<span class="badge accent">'+T().badge1+'</span><span class="badge">'+T().badge2+'</span>';
+  }
+  function renderHand(){
+    $('hand').innerHTML=q.tilesSorted.map(t=>tileHTML(t,'click')).join('');
+    if(!answered){
+      [...$('hand').children].forEach((el,i)=>{
+        el.onclick=()=>answer(q.tilesSorted[i],el);
+      });
+    }
+  }
+  function markHand(){
+    let bestMarked=false,pickedMarked=false;
+    [...$('hand').children].forEach((el,i)=>{
+      const t=q.tilesSorted[i];
+      el.classList.remove('picked','best');
+      el.classList.toggle('click',!answered);
+      if(answered){
+        if(!bestMarked&&t===q.answer){el.classList.add('best');bestMarked=true;}
+        else if(!pickedMarked&&t===lastChosen&&t!==q.answer){el.classList.add('picked');pickedMarked=true;}
+      }
+    });
+  }
+  function accHTML(uk){
+    if(!uk.list.length)return '<span class="n">—</span>';
+    return uk.list.map(a=>tileHTML(a.t)+'<span class="n">×'+a.n+'</span>').join(' ');
+  }
+  function renderBreakdown(){
+    const tx=T();
+    let html='';
+    if(lastChosen!==q.answer){
+      const mine=analyzeOne(q.tiles.slice(),lastChosen);
+      html+='<div class="exp-row">'+tx.bestRow(q.answer,q.answerSh,q.answerUk)+'</div>'
+        +'<div class="acc">'+tx.accLabel+' '+accHTML(q.answerUk)+'</div>';
+      html+='<div class="exp-row">'+tx.yourRow(mine.t,mine.sh,mine.uk)+'</div>'
+        +'<div class="acc">'+accHTML(mine.uk)+'</div>';
+    }else{
+      html+='<div class="exp-row">'+tx.bestRow(q.answer,q.answerSh,q.answerUk)+'</div>'
+        +'<div class="acc">'+tx.accLabel+' '+accHTML(q.answerUk)+'</div>';
+    }
+    html+='<p class="note2">'+tx.note+'</p>';
+    return html;
+  }
+  function answer(t,el){
+    if(answered)return;
+    answered=true;
+    lastChosen=t;
+    const ok=t===q.answer;
+    stats.a++;
+    if(ok){stats.c++;stats.streak++;stats.best=Math.max(stats.best,stats.streak);}
+    else stats.streak=0;
+    saveStats();renderStats();
+    const v=$('verdict');
+    v.textContent=ok?T().ok(q.answer):T().bad(q.answer);
+    v.className=ok?'ok':'bad';
+    markHand();
+    $('breakdown').innerHTML=renderBreakdown();
+    $('btn-next').hidden=false;
+    $('btn-next').focus();
+  }
+  function nextQ(){
+    q=genQuestion();answered=false;lastChosen=null;
+    $('verdict').textContent='';$('verdict').className='';
+    $('breakdown').innerHTML='';
+    $('btn-next').hidden=true;
+    $('hint-text').style.display='none';
+    $('btn-hint').textContent=T().hintBtn;
+    renderMeta();renderHand();
+  }
+
+  /* ---- 模式切换 ---- */
+  function applyMode(){
+    const fishy=MODE==='fishy';
+    document.body.classList.toggle('fishy',fishy);
+    document.title=fishy?'hand-drill':'基础何切练习';
+    const tx=T();
+    $('title').childNodes[0].nodeValue=tx.title;
+    $('title-sub').textContent=tx.titleSub;
+    $('ask').textContent=tx.ask;
+    const small=document.createElement('small');small.textContent=' '+tx.askSub;
+    $('ask').appendChild(small);
+    $('btn-mode').textContent=tx.modeBtn;
+    $('btn-hint').textContent=tx.hintBtn;
+    $('btn-next').textContent=tx.next;
+    $('hint-text').textContent='';
+    if(q){
+      renderMeta();renderHand();
+      if(answered){
+        markHand();
+        const v=$('verdict');
+        const ok=lastChosen===q.answer;
+        v.textContent=ok?T().ok(q.answer):T().bad(q.answer);
+        v.className=ok?'ok':'bad';
+        $('breakdown').innerHTML=renderBreakdown();
+      }
+    }
+    renderStats();
+  }
+  function setMode(m){if(MODE===m)return;MODE=m;applyMode();}
+
+  $('btn-mode').onclick=()=>setMode(MODE==='fishy'?'zh':'fishy');
+  $('btn-hint').onclick=()=>{
+    const h=$('hint-text');
+    if(h.style.display==='none'||!h.style.display){
+      h.textContent=T().hint(q.answerSh);
+      h.style.display='block';
+    }else h.style.display='none';
+  };
+  $('btn-next').onclick=nextQ;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&answered){e.preventDefault();nextQ();}
+    else if((e.key==='h'||e.key==='H')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){setMode(MODE==='fishy'?'zh':'fishy');}
+    else if(e.key==='Escape'){setMode('fishy');}
+  });
+  if(AUTO_BLUR){
+    window.addEventListener('blur',()=>setMode('fishy'));
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)setMode('fishy');});
+  }
+
+  applyMode();
+  nextQ();
+})();
+</script>
+</body>
+</html>

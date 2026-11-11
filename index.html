@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日麻算符练习器</title>
+<style>
+:root{
+  --red:#d0453c;--blue:#2e6fd4;--green:#3d9e52;--dark:#3a4353;
+  --gold:#d8a018;--ink:#2b2f36;--muted:#8a8f98;--card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#f5f4f0;color:var(--ink);display:flex;justify-content:center;padding:22px 12px 80px}
+.wrap{width:100%;max-width:740px}
+header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+h1{font-size:20px;font-weight:700}
+h1 small{font-weight:400;color:var(--muted);font-size:13px;margin-left:8px}
+#stats{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);padding:18px;margin-bottom:14px}
+
+/* ---- 牌 ---- */
+.tile{width:40px;height:54px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:22px;box-shadow:0 1px 2px rgba(0,0,0,.28);user-select:none;flex:none}
+.tile.m{background:var(--red)}
+.tile.p{background:var(--blue)}
+.tile.s{background:var(--green)}
+.tile.h{background:var(--dark);font-size:19px;letter-spacing:0}
+.tile.zhong{background:var(--red)}
+.tile.fa{background:var(--green)}
+.tile.bai{background:#fff;border:2px solid #c9c9c9;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.tile.sm{width:22px;height:30px;font-size:13px;border-radius:3px;box-shadow:none}
+.tile.win{outline:3px solid var(--gold);outline-offset:1px}
+
+.meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.badge{display:inline-flex;align-items:center;gap:5px;background:#f0efe9;border-radius:6px;padding:4px 8px;font-size:13px}
+.badge.accent{background:#efe7d2;font-weight:600}
+.hand{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px;row-gap:12px;min-height:58px}
+.hand .sep{width:14px;flex:none}
+.win-wrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+.win-wrap .tag{font-size:11px;color:var(--gold);font-weight:800}
+.groups{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-top:8px}
+.grp{display:inline-flex;flex-direction:column;align-items:center;gap:4px;
+  border:1.5px solid #e3dfd5;border-radius:10px;padding:8px 8px 6px;background:#fbfaf7}
+.grp .row{display:flex;gap:3px}
+.grp .cap{font-size:11px;color:var(--muted)}
+#melds{margin-top:12px}
+#structure{margin-top:4px}
+.ghost{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;
+  text-decoration:underline dotted;padding:4px 2px;margin-top:12px}
+.ghost:hover{color:var(--ink)}
+
+.ask{font-size:15px;font-weight:700}
+.ask small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.fu-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.fu-btns button{min-width:62px;padding:10px 0;border:1.5px solid #ddd9cf;background:#fff;border-radius:8px;
+  font-size:16px;font-weight:700;color:var(--ink);cursor:pointer;transition:.12s;font-family:inherit}
+.fu-btns button:hover:not(:disabled){border-color:var(--dark);transform:translateY(-1px)}
+.fu-btns button:disabled{cursor:default;opacity:.4}
+.fu-btns button.right{background:#e2f3e6;border-color:#3d9e52;color:#256b39;opacity:1}
+.fu-btns button.wrong{background:#fbe7e5;border-color:#d0453c;color:#a3271f;opacity:1}
+#verdict{margin-top:14px;font-size:16px;font-weight:800;min-height:22px}
+#verdict.ok{color:#256b39}
+#verdict.bad{color:#a3271f}
+.bk{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+.bk td{padding:6px 2px;border-bottom:1px dashed #e6e2d8}
+.bk td:last-child{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bk tr.sum td{color:var(--muted)}
+.bk tr.final td{border-bottom:none;font-size:16px;font-weight:800}
+.notes{margin-top:8px;font-size:13px;color:var(--muted)}
+.cap2{margin-top:14px;font-size:13px;color:var(--muted)}
+#btn-next{margin-top:14px;width:100%;padding:12px;border:none;border-radius:10px;background:var(--dark);
+  color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+#btn-next:hover{background:#2b3242}
+
+details.card summary{cursor:pointer;font-weight:700;font-size:14px}
+details.card[open] summary{margin-bottom:10px}
+.rt{border-collapse:collapse;margin:10px 0;font-size:13px}
+.rt th,.rt td{border:1px solid #e3dfd5;padding:5px 12px;text-align:center}
+.rt th{background:#f7f5f0}
+.rules-ul{margin:8px 0 0 18px;font-size:13.5px;line-height:1.9}
+.legend{margin-top:10px;font-size:12.5px;color:var(--muted)}
+footer{font-size:12px;color:var(--muted);line-height:1.8;text-align:center}
+footer a{color:#6b7280}
+
+@media (max-width:480px){
+  .tile{width:33px;height:45px;font-size:18px}
+  .tile.h{font-size:16px}
+  .tile.sm{width:20px;height:27px;font-size:12px}
+  .fu-btns button{min-width:56px;padding:9px 0;font-size:15px}
+  .card{padding:14px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>日麻算符练习器<small>符数速算训练</small></h1>
+    <div id="stats"></div>
+  </header>
+
+  <section class="card">
+    <div class="meta" id="meta"></div>
+    <div class="hand" id="hand"></div>
+    <div class="groups" id="melds" hidden></div>
+    <button class="ghost" id="btn-hint">看不懂？显示手牌结构</button>
+    <div id="structure" hidden></div>
+  </section>
+
+  <section class="card">
+    <p class="ask">这副牌一共是多少符？<small>仅算符，不考虑番数</small></p>
+    <div class="fu-btns" id="fu-btns"></div>
+    <div id="verdict"></div>
+    <div id="breakdown"></div>
+    <button id="btn-next" hidden>下一题（Enter）</button>
+  </section>
+
+  <details class="card">
+    <summary>符数速查 &amp; 规则说明</summary>
+    <table class="rt">
+      <tr><th>构成</th><th>中张</th><th>幺九/字</th></tr>
+      <tr><td>明刻（碰）</td><td>2</td><td>4</td></tr>
+      <tr><td>暗刻</td><td>4</td><td>8</td></tr>
+      <tr><td>明杠</td><td>8</td><td>16</td></tr>
+      <tr><td>暗杠</td><td>16</td><td>32</td></tr>
+    </table>
+    <ul class="rules-ul">
+      <li>底符 20；顺子 0 符；<b>门清荣和 +10</b>；<b>自摸 +2</b></li>
+      <li>雀头为三元牌 / 场风 / 自风 +2，连风（场风=自风）+4</li>
+      <li>嵌张 / 边张 / 单骑听牌 +2；两面 / 双碰 0</li>
+      <li>荣和牌补成的刻子按<b>明刻</b>计符</li>
+      <li>七对子固定 25 符；副露无符手（副露平和型）= 30 符</li>
+      <li>合计向上进位到 10（七对子除外）</li>
+    </ul>
+    <p class="legend">本练习器口径（雀魂）：平和自摸 30 符、连风雀头 4 符。配色：红=万，蓝=饼，绿=条，深灰 E/S/W/N=风牌，纯红=中，纯绿=发，白=白。</p>
+  </details>
+
+  <footer>
+    规则资料：<a href="https://riichi.wiki/Fu" target="_blank" rel="noopener">riichi.wiki · Fu</a> ·
+    <a href="https://zh.wikibooks.org/wiki/%E6%97%A5%E6%9C%AC%E9%BA%BB%E9%9B%80/%E9%BB%9E%E6%95%B8%E8%A8%88%E7%AE%97%E8%A6%8F%E5%89%87" target="_blank" rel="noopener">维基教科书 · 点数计算</a> ·
+    <a href="https://zhuanlan.zhihu.com/p/686949512" target="_blank" rel="noopener">知乎 · 日麻计分法</a> ·
+    <a href="https://en.wikipedia.org/wiki/Japanese_mahjong_scoring_rules" target="_blank" rel="noopener">Wikipedia · Scoring</a>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+ * 牌定义：0-8 万1-9 | 9-17 饼1-9 | 18-26 条1-9
+ *         27东 28南 29西 30北 | 31白 32发 33中
+ * ============================================================ */
+const CN_NUM='一二三四五六七八九';
+const HONOR_RENDER={27:['h','E'],28:['h','S'],29:['h','W'],30:['h','N'],31:['bai',''],32:['fa',''],33:['zhong','']};
+const HONOR_NAME=['东','南','西','北','白','发','中'];
+const WAIT_NAME={kanchan:'嵌张',penchan:'边张',tanki:'单骑',ryanmen:'两面',shanpon:'双碰'};
+const FUS=[25,30,40,50,60,70,80,90,100,110];
+
+function isYaochu(t){return t>=27||t%9===0||t%9===8;}
+function tileName(t){
+  if(t>=27)return HONOR_NAME[t-27];
+  return CN_NUM[t%9]+'万饼条'[t/9|0];
+}
+function tileHTML(t,extra){
+  extra=extra||'';
+  if(t>=27){
+    const r=HONOR_RENDER[t];
+    return '<span class="tile '+r[0]+(extra?' '+extra:'')+'">'+r[1]+'</span>';
+  }
+  return '<span class="tile '+'mps'[t/9|0]+(extra?' '+extra:'')+'">'+(t%9+1)+'</span>';
+}
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;const t=a[i];a[i]=a[j];a[j]=t;}
+  return a;
+}
+
+/* ============================================================
+ * 分解枚举：把自由牌（门前部分，含和牌张）分解为 setsNeeded 面子 + 1 雀头
+ * ============================================================ */
+function decomposeAll(cnt0,setsNeeded){
+  const res=[],cnt=cnt0.slice(),sets=[];
+  let pair=-1;
+  function rec(){
+    let i=0;while(i<34&&cnt[i]===0)i++;
+    if(i===34){
+      if(sets.length===setsNeeded&&pair>=0)res.push({sets:sets.slice(),pair:pair});
+      return;
+    }
+    if(pair<0&&cnt[i]>=2){cnt[i]-=2;pair=i;rec();pair=-1;cnt[i]+=2;}
+    if(sets.length<setsNeeded&&cnt[i]>=3){
+      cnt[i]-=3;sets.push({kind:'kotsu',tile:i});rec();sets.pop();cnt[i]+=3;
+    }
+    if(sets.length<setsNeeded&&i<27&&i%9<=6&&cnt[i+1]>0&&cnt[i+2]>0){
+      cnt[i]--;cnt[i+1]--;cnt[i+2]--;
+      sets.push({kind:'shuntsu',tile:i});rec();sets.pop();
+      cnt[i]++;cnt[i+1]++;cnt[i+2]++;
+    }
+  }
+  rec();
+  return res;
+}
+
+/* ============================================================
+ * 符数计算
+ * h: {menzen, winMode, roundWind, seatWind, melds}
+ * d: 分解 {sets, pair}；role: {wait, setIdx}（setIdx=-1 表示和牌张在雀头）
+ * ============================================================ */
+function calcFu(h,d,role){
+  const items=[{label:'底符',fu:20}];
+  let fu=20,allShuntsu=true;
+  h.melds.forEach(g=>{
+    const y=isYaochu(g.tile);
+    if(g.kind==='kan'){
+      allShuntsu=false;
+      const f=g.open?(y?16:8):(y?32:16);
+      items.push({label:(g.open?'明杠':'暗杠')+' '+tileName(g.tile)+'（'+(y?'幺九':'中张')+'）',fu:f});
+      fu+=f;
+    }else if(g.kind==='kotsu'){
+      allShuntsu=false;
+      const f=y?4:2;
+      items.push({label:'碰 '+tileName(g.tile)+'（明刻·'+(y?'幺九':'中张')+'）',fu:f});
+      fu+=f;
+    }else{
+      items.push({label:'吃（顺子 0 符）',fu:0});
+    }
+  });
+  d.sets.forEach((s,i)=>{
+    if(s.kind!=='kotsu')return;
+    allShuntsu=false;
+    const y=isYaochu(s.tile);
+    const asOpen=(h.winMode==='ron'&&i===role.setIdx); // 荣和补成的刻子按明刻
+    const f=asOpen?(y?4:2):(y?8:4);
+    items.push({label:(asOpen?'明刻（荣和）':'暗刻')+' '+tileName(s.tile)+'（'+(y?'幺九':'中张')+'）',fu:f});
+    fu+=f;
+  });
+  // 雀头
+  const p=d.pair;
+  let pf=0,pl='';
+  if(p>=31){pf=2;pl='三元牌雀头 '+tileName(p);}
+  else if(p>=27){
+    if(p===h.roundWind&&p===h.seatWind){pf=4;pl='连风雀头 '+tileName(p);}
+    else if(p===h.roundWind){pf=2;pl='场风雀头 '+tileName(p);}
+    else if(p===h.seatWind){pf=2;pl='自风雀头 '+tileName(p);}
+  }
+  if(pf){items.push({label:pl,fu:pf});fu+=pf;}
+  // 听牌形
+  const waitFu=(role.wait==='kanchan'||role.wait==='penchan'||role.wait==='tanki')?2:0;
+  if(waitFu){items.push({label:'听牌形：'+WAIT_NAME[role.wait],fu:2});fu+=2;}
+  // 和牌方式
+  if(h.winMode==='ron'&&h.menzen){items.push({label:'门清荣和',fu:10});fu+=10;}
+  if(h.winMode==='tsumo'){items.push({label:'自摸',fu:2});fu+=2;}
+  // 副露平和型（无符手）强制 30
+  if(!h.menzen&&fu===20){items.push({label:'副露平和型（无其他符）',fu:2});fu=22;}
+  const raw=fu;
+  const final=Math.ceil(fu/10)*10;
+  const isPinfu=h.menzen&&allShuntsu&&role.wait==='ryanmen'&&pf===0;
+  return {fu:final,raw:raw,items:items,wait:role.wait,waitName:WAIT_NAME[role.wait],isPinfu:isPinfu};
+}
+
+/* ============================================================
+ * 出题：标准型（4面子+雀头）/ 七对子
+ * 任何歧义（不同分解 → 不同符数）或非法结构都直接重生成
+ * ============================================================ */
+function genChiitoi(){
+  const chosen=shuffle([...Array(34).keys()]).slice(0,7);
+  const winTile=chosen[Math.random()*7|0];
+  const handTiles=[];
+  chosen.forEach(t=>{handTiles.push(t,t);});
+  handTiles.splice(handTiles.indexOf(winTile),1);
+  handTiles.sort((a,b)=>a-b);
+  return {
+    type:'chiitoi',
+    roundWind:Math.random()<0.72?27:28,
+    seatWind:27+(Math.random()*4|0),
+    menzen:true,
+    winMode:Math.random()<0.5?'tsumo':'ron',
+    winTile:winTile,handTiles:handTiles,melds:[],
+    answer:{fu:25,raw:25,items:[{label:'七对子（固定符）',fu:25}],wait:'tanki',waitName:'单骑',isPinfu:false}
+  };
+}
+
+function genStandard(){
+  const counts=new Array(34).fill(0);
+  const sets=[];
+  const yaochu=[0,8,9,17,18,26,27,28,29,30,31,32,33];
+  const pickW=()=>Math.random()<0.62?yaochu[Math.random()*yaochu.length|0]:Math.random()*34|0;
+  for(let si=0;si<4;si++){
+    let placed=false;
+    for(let tr=0;tr<30&&!placed;tr++){
+      const r=Math.random();
+      let kind,tiles;
+      if(r<0.5){
+        kind='shuntsu';
+        const base=(Math.random()*3|0)*9+(Math.random()*7|0);
+        tiles=[base,base+1,base+2];
+      }else if(r<0.9){
+        kind='kotsu';const t=pickW();tiles=[t,t,t];
+      }else{
+        kind='kan';const t=pickW();tiles=[t,t,t,t];
+      }
+      if(tiles.every(x=>counts[x]<4)){tiles.forEach(x=>counts[x]++);sets.push({kind:kind,tiles:tiles});placed=true;}
+    }
+    if(!placed)return null;
+  }
+  let pair=-1;
+  for(let tr=0;tr<40;tr++){
+    const t=Math.random()<0.4?27+(Math.random()*7|0):Math.random()*34|0;
+    if(counts[t]<=2){pair=t;break;}
+  }
+  if(pair<0)return null;
+  counts[pair]+=2;
+
+  // 和牌张所在组（杠组与副露组不可能包含和牌张）
+  const candIdx=[];
+  sets.forEach((s,i)=>{if(s.kind!=='kan')candIdx.push(i);});
+  const roll=Math.random()*(candIdx.length+1)|0;
+  const wi=roll===candIdx.length?-1:candIdx[roll];
+  let winTile;
+  if(wi===-1)winTile=pair;
+  else if(sets[wi].kind==='kotsu')winTile=sets[wi].tiles[0];
+  else winTile=sets[wi].tiles[Math.random()*3|0];
+
+  const roundWind=Math.random()<0.72?27:28;
+  const seatWind=27+(Math.random()*4|0);
+  const winMode=Math.random()<0.5?'tsumo':'ron';
+
+  // 副露分配（和牌张所在组保持门前）
+  const others=shuffle(sets.map((s,i)=>i).filter(i=>i!==wi));
+  let openCount=0;
+  if(others.length&&Math.random()<0.55){
+    const w=Math.random();
+    openCount=Math.min(w<0.55?1:(w<0.9?2:3),others.length);
+  }
+  const openSet=new Set(others.slice(0,openCount));
+  const menzen=openSet.size===0;
+  const melds=[];
+  sets.forEach((s,i)=>{
+    if(s.kind==='kan')melds.push({kind:'kan',open:openSet.has(i),tile:s.tiles[0]});
+    else if(openSet.has(i))melds.push({kind:s.kind,open:true,tile:s.tiles[0]});
+  });
+
+  // 自由牌 = 全部牌 - 副露组（杠无论明暗都固定为杠）
+  const free=counts.slice();
+  melds.forEach(g=>{
+    if(g.kind==='shuntsu'){free[g.tile]--;free[g.tile+1]--;free[g.tile+2]--;}
+    else if(g.kind==='kan')free[g.tile]-=4;
+    else free[g.tile]-=3;
+  });
+  const setsNeeded=4-melds.length;
+
+  // 枚举全部分解 → 和牌张所有可能角色 → 符数必须唯一
+  const decomps=decomposeAll(free,setsNeeded);
+  if(!decomps.length)return null;
+  const fuMap=new Map();
+  for(const d of decomps){
+    const roles=[];
+    if(d.pair===winTile)roles.push({wait:'tanki',setIdx:-1});
+    d.sets.forEach((s,idx)=>{
+      if(s.kind==='kotsu'){
+        if(s.tile===winTile)roles.push({wait:'shanpon',setIdx:idx});
+      }else{
+        const a=s.tile;
+        if(winTile===a)roles.push({wait:a%9===6?'penchan':'ryanmen',setIdx:idx});
+        else if(winTile===a+1)roles.push({wait:'kanchan',setIdx:idx});
+        else if(winTile===a+2)roles.push({wait:a%9===0?'penchan':'ryanmen',setIdx:idx});
+      }
+    });
+    for(const role of roles){
+      const r=calcFu({menzen:menzen,winMode:winMode,roundWind:roundWind,seatWind:seatWind,melds:melds},d,role);
+      if(!fuMap.has(r.fu))fuMap.set(r.fu,{r:r,d:d,role:role});
+    }
+  }
+  if(fuMap.size!==1)return null; // 有歧义 → 重生成
+  const picked=fuMap.values().next().value;
+  if(picked.r.fu>110)return null;
+
+  const handTiles=[];
+  free.forEach((c,t)=>{for(let k=0;k<c;k++)handTiles.push(t);});
+  const wIdx=handTiles.indexOf(winTile);
+  if(wIdx<0)return null;
+  handTiles.splice(wIdx,1);
+  handTiles.sort((a,b)=>a-b);
+
+  return {type:'standard',roundWind:roundWind,seatWind:seatWind,menzen:menzen,winMode:winMode,
+    winTile:winTile,handTiles:handTiles,melds:melds,
+    answer:picked.r,decomp:picked.d,role:picked.role};
+}
+
+function genQuestion(){
+  for(let i=0;i<400;i++){
+    let q=null;
+    try{q=Math.random()<0.09?genChiitoi():genStandard();}catch(e){q=null;}
+    if(q)return q;
+  }
+  return genChiitoi();
+}
+
+/* 自测钩子：批量生成，返回符数分布 */
+globalThis.__selftest=function(n){
+  n=n||3000;
+  const dist={};let chi=0,bad=0;
+  for(let i=0;i<n;i++){
+    const x=genQuestion();
+    dist[x.answer.fu]=(dist[x.answer.fu]||0)+1;
+    if(x.type==='chiitoi')chi++;
+    const sum=x.answer.items.reduce((a,it)=>a+it.fu,0);
+    if(sum!==x.answer.raw||x.answer.fu>110||(x.type==='chiitoi'?x.answer.fu!==25:x.answer.fu<30))bad++;
+  }
+  return {dist:dist,chiitoiRatio:chi/n,bad:bad};
+};
+
+/* ============================================================
+ * UI（非浏览器环境下跳过）
+ * ============================================================ */
+if(typeof document!=='undefined')(function(){
+  const $=id=>document.getElementById(id);
+  const KEY='fu-trainer-stats-v1';
+  let stats;
+  try{stats=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){stats={};}
+  stats.a=stats.a||0;stats.c=stats.c||0;stats.streak=stats.streak||0;stats.best=stats.best||0;
+  const saveStats=()=>{try{localStorage.setItem(KEY,JSON.stringify(stats));}catch(e){}};
+
+  let q=null,answered=false;
+
+  function renderStats(){
+    $('stats').textContent='连对 ×'+stats.streak+'｜最佳 ×'+stats.best+'｜累计 '+stats.c+'/'+stats.a;
+  }
+  function renderMeta(){
+    const badges=[
+      '<span class="badge">场风 '+tileHTML(q.roundWind,'sm')+'</span>',
+      '<span class="badge">自风 '+tileHTML(q.seatWind,'sm')+'</span>',
+      '<span class="badge accent">'+(q.menzen?'门清':'有副露')+'</span>',
+      '<span class="badge accent">'+(q.winMode==='tsumo'?'自摸':'荣和')+'</span>'
+    ];
+    $('meta').innerHTML=badges.join('');
+  }
+  function renderHand(){
+    let html=q.handTiles.map(t=>tileHTML(t)).join('');
+    html+='<span class="sep"></span><span class="win-wrap"><span class="tag">和</span>'+tileHTML(q.winTile,'win')+'</span>';
+    $('hand').innerHTML=html;
+  }
+  function meldGrpsHTML(){
+    return q.melds.map(g=>{
+      const lbl=g.kind==='kan'?(g.open?'明杠':'暗杠'):(g.kind==='kotsu'?'碰':'吃');
+      const tiles=g.kind==='shuntsu'?[g.tile,g.tile+1,g.tile+2]:Array(g.kind==='kan'?4:3).fill(g.tile);
+      return '<span class="grp"><span class="row">'+tiles.map(t=>tileHTML(t)).join('')+'</span><span class="cap">'+lbl+'</span></span>';
+    }).join('');
+  }
+  function grpHTML(tiles,label,markWin){
+    const arr=tiles.map(t=>tileHTML(t));
+    if(markWin){
+      const i=tiles.indexOf(q.winTile);
+      if(i>=0)arr[i]=tileHTML(q.winTile,'win');
+    }
+    return '<span class="grp"><span class="row">'+arr.join('')+'</span><span class="cap">'+label+'</span></span>';
+  }
+  function groupsHTML(markWin){
+    if(q.type==='chiitoi'){
+      const cnt={};
+      q.handTiles.concat(q.winTile).forEach(t=>cnt[t]=(cnt[t]||0)+1);
+      return Object.keys(cnt).map(Number).sort((a,b)=>a-b)
+        .map(t=>grpHTML(Array(cnt[t]).fill(t),'对子',markWin&&t===q.winTile)).join('');
+    }
+    let html='';
+    q.decomp.sets.forEach((s,i)=>{
+      const tiles=s.kind==='shuntsu'?[s.tile,s.tile+1,s.tile+2]:[s.tile,s.tile,s.tile];
+      html+=grpHTML(tiles,s.kind==='kotsu'?'暗刻':'顺子',markWin&&i===q.role.setIdx);
+    });
+    html+=grpHTML([q.decomp.pair,q.decomp.pair],'雀头',markWin&&q.role.setIdx===-1);
+    if(q.melds.length)html+=meldGrpsHTML();
+    return html;
+  }
+  function renderBtns(){
+    const box=$('fu-btns');box.innerHTML='';
+    FUS.forEach(f=>{
+      const b=document.createElement('button');
+      b.textContent=f;b.dataset.fu=f;
+      b.onclick=()=>answer(f,b);
+      box.appendChild(b);
+    });
+  }
+  function renderBreakdown(){
+    const a=q.answer;
+    let html='<table class="bk">';
+    a.items.forEach(it=>{if(it.fu>0)html+='<tr><td>'+it.label+'</td><td>+'+it.fu+'</td></tr>';});
+    if(q.type!=='chiitoi'){
+      html+='<tr class="sum"><td>小计</td><td>'+a.raw+'</td></tr>';
+      if(a.raw!==a.fu)html+='<tr class="sum"><td>切上（进位到 10）</td><td>'+a.fu+'</td></tr>';
+    }
+    html+='<tr class="final"><td>最终</td><td>'+a.fu+' 符</td></tr></table>';
+    const notes=['听牌形：'+a.waitName];
+    if(a.isPinfu)notes.push('构成平和（30 符）');
+    if(q.type==='chiitoi')notes.push('七对子固定 25 符');
+    html+='<p class="notes">'+notes.join(' · ')+'</p>';
+    html+='<p class="cap2">手牌结构：</p><div class="groups">'+groupsHTML(true)+'</div>';
+    return html;
+  }
+  function answer(f,btn){
+    if(answered)return;
+    answered=true;
+    const ok=f===q.answer.fu;
+    stats.a++;
+    if(ok){stats.c++;stats.streak++;stats.best=Math.max(stats.best,stats.streak);}
+    else stats.streak=0;
+    saveStats();renderStats();
+    const v=$('verdict');
+    v.textContent=ok?('✓ 正确！'+q.answer.fu+' 符'):('✕ 答错了，正确答案是 '+q.answer.fu+' 符');
+    v.className=ok?'ok':'bad';
+    [...$('fu-btns').children].forEach(b=>{
+      b.disabled=true;
+      const bf=+b.dataset.fu;
+      if(bf===q.answer.fu)b.classList.add('right');
+      else if(bf===f)b.classList.add('wrong');
+    });
+    $('breakdown').innerHTML=renderBreakdown();
+    $('btn-next').hidden=false;
+    $('btn-next').focus();
+  }
+  function nextQ(){
+    q=genQuestion();answered=false;
+    $('verdict').textContent='';$('verdict').className='';
+    $('breakdown').innerHTML='';
+    $('btn-next').hidden=true;
+    $('structure').hidden=true;$('structure').innerHTML='';
+    $('btn-hint').textContent='看不懂？显示手牌结构';
+    const m=$('melds');
+    if(q.melds.length){m.hidden=false;m.innerHTML=meldGrpsHTML();}
+    else{m.hidden=true;m.innerHTML='';}
+    renderMeta();renderHand();renderBtns();
+  }
+
+  $('btn-hint').onclick=()=>{
+    const s=$('structure');
+    if(s.hidden){s.innerHTML='<div class="groups">'+groupsHTML(false)+'</div>';s.hidden=false;
+      $('btn-hint').textContent='隐藏手牌结构';}
+    else{s.hidden=true;$('btn-hint').textContent='看不懂？显示手牌结构';}
+  };
+  $('btn-next').onclick=nextQ;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&answered){e.preventDefault();nextQ();}
+  });
+
+  nextQ();renderStats();
+})();
+</script>
+</body>
+</html>

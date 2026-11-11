@@ -1,0 +1,69 @@
+{
+  "name": "calc-drill",
+  "displayName": "Calc Drill",
+  "description": "Riichi mahjong fu (scoring) trainer with a built-in discreet dark mode. 日麻算符练习器",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fuyiweiwow/mahjong-fu-trainer"
+  },
+  "bugs": {
+    "url": "https://github.com/fuyiweiwow/mahjong-fu-trainer/issues"
+  },
+  "homepage": "https://github.com/fuyiweiwow/mahjong-fu-trainer#readme",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Education"
+  ],
+  "keywords": [
+    "riichi",
+    "mahjong",
+    "japanese mahjong",
+    "fu",
+    "scoring",
+    "trainer",
+    "麻将",
+    "日麻",
+    "算符",
+    "点数"
+  ],
+  "activationEvents": [
+    "onCommand:calcDrill.open"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "calcDrill.open",
+        "title": "Calc Drill: Open",
+        "category": "Calc Drill"
+      }
+    ],
+    "configuration": {
+      "title": "Calc Drill",
+      "properties": {
+        "calcDrill.panelTitle": {
+          "type": "string",
+          "default": "Calc Drill",
+          "description": "练习面板标题（可改成任何工作相关的名字）"
+        },
+        "calcDrill.startDisguised": {
+          "type": "boolean",
+          "default": true,
+          "description": "打开时默认低调显示（按 H 切换回正常模式）"
+        },
+        "calcDrill.autoDisguiseOnBlur": {
+          "type": "boolean",
+          "default": true,
+          "description": "失焦/切走面板时自动切回低调模式"
+        }
+      }
+    }
+  }
+}

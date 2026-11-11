@@ -1,0 +1,47 @@
+{
+  "name": "hand-drill",
+  "displayName": "Hand Drill",
+  "description": "Hand pattern discard drills",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:handDrill.open"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "handDrill.open",
+        "title": "Hand Drill: Open",
+        "category": "Hand Drill"
+      }
+    ],
+    "configuration": {
+      "title": "Hand Drill",
+      "properties": {
+        "handDrill.panelTitle": {
+          "type": "string",
+          "default": "Hand Drill",
+          "description": "练习面板标题（可改成任何工作相关的名字）"
+        },
+        "handDrill.startDisguised": {
+          "type": "boolean",
+          "default": true,
+          "description": "打开时默认低调显示（按 H 切换回正常模式）"
+        },
+        "handDrill.autoDisguiseOnBlur": {
+          "type": "boolean",
+          "default": true,
+          "description": "失焦/切走面板时自动切回低调模式"
+        }
+      }
+    }
+  }
+}

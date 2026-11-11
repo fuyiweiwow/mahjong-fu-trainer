@@ -1,0 +1,4 @@
+*.vsix
+.repo_body.json
+.DS_Store
+Thumbs.db
