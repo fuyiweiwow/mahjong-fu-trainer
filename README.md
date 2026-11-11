@@ -2,6 +2,11 @@
 
 单文件零依赖静态网页（`index.html`），双击即可用，或任意静态服务器打开。练习日麻符数（符）速算：随机生成「4面子+雀头 / 七对子」和牌型，答符数，答后给出符数详单（底符/刻杠/雀头/听牌形/切上）与手牌结构。
 
+## 安装 VSCode 插件（VSIX）
+
+1. 从 [Releases](https://github.com/fuyiweiwow/mahjong-fu-trainer/releases) 下载 `calc-drill-0.1.0.vsix`
+2. VSCode 扩展面板 → 右上角 `···` → **从 VSIX 安装**（或命令行 `code --install-extension calc-drill-0.1.0.vsix`）
+
 ## VSCode 插件（摸鱼版）
 
 见 `extension/`，已打包安装为 `local.calc-drill`（伪装名 **Calc Drill**）：
