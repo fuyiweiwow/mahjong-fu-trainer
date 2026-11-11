@@ -24,12 +24,22 @@
 见 `extension-kiri/`，已安装为 `local.hand-drill`（伪装名 **Hand Drill**）：
 
 - `Ctrl+Shift+P` → `Hand Drill: Open`；14 张手牌**点选**一张切牌
-- 判定口径（基础牌效）：先比向听数（少者优），再比进张枚数（多者优）；不考虑打点/役种/防守/宝牌，排除七对型
-- 出题：模板 4面子+雀头 → 随机破坏 1~3 张 → 全选项分析，最佳不唯一自动重生成；向听范围 听牌/一向/二向
-- 解析：最佳切法进张清单（如 `3饼×4 6饼×4`），答错时与你的切法并列对比
+- 判定链（教材标准）：向听数 → 进张**枚数** → 进张**种数** → **好形**进张枚数（一向听时）；进张清单逐张标注「好/愚」
+- 场况展示：局/本场/巡目/宝牌表示牌（悬停局数徽章看四家点数），不影响判定
+- **两种出题模式**：随机生成 / **题库模式**（天凤凤凰桌真实对局挖掘，答案=效率引擎判定且与实战切牌一致，分基础/进阶）
 - 同样的双模式/老板键/失焦自动低调/面板标题设置（`handDrill.*`）
 
-重新打包：`cd extension-kiri && npx -y @vscode/vsce package --allow-missing-repository`，然后 `code --install-extension hand-drill-0.1.0.vsix`。
+### 题库挖掘管线（`tools/paifu/`）
+
+```
+python extract.py      # 解析 logs/*.xml (天凤 mjlog) -> positions.json（门清自摸时点+场况）
+node   adjudicate.js   # 用 webview 引擎判定 -> bank.json（唯一最佳+实战一致，基础/进阶分层）
+node   inject-bank.js  # 注入 webview.html 的 BANK 数组
+```
+
+牌谱来源：天凤公开档案 `tenhou.net/sc/raw/`（scf=凤凰桌），下载命令见 `tools/paifu/`（`ids.txt` 提取 + curl 并行拉取）。
+
+重新打包：`cd extension-kiri && npx -y @vscode/vsce package --allow-missing-repository`，然后 `code --install-extension hand-drill-0.2.0.vsix`。
 
 ## 规则口径（雀魂）
 

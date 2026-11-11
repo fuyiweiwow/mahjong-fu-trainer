@@ -1,0 +1,8 @@
+logs/*.xml
+positions.json
+bank.json
+ids.txt
+list.js
+raw.html
+t.out
+*.gz

@@ -2,8 +2,8 @@
   "name": "hand-drill",
   "displayName": "Hand Drill",
   "description": "Hand pattern discard drills",
-  "version": "0.1.0",
-  "publisher": "local",
+  "version": "0.2.0",
+  "publisher": "fuyiweiwow",
   "license": "MIT",
   "engines": {
     "vscode": "^1.74.0"
